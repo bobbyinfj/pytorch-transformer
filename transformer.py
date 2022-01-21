@@ -23,7 +23,7 @@ class SelfAttention(nn.Module):
 
     def forward(self, values, keys, query, mask):
         N = query.shape[0]
-        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1] # why [1] is used here? Is it because each of these is a 1 dimensional tensor, so we only need the first dimension?
+        value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1] # why [1] is used here: It is because each of these is a 1 dimensional tensor, so we only need the first dimension.
 
         # Split embedding into self.heads pieces
         values = values.reshape(N, value_len, self.heads, self.head_dim)
@@ -36,7 +36,9 @@ class SelfAttention(nn.Module):
         queries = self.queries(queries)
 
         # multiply queries with keys and call it memory
-        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys]) #? How are these dimensions getting multiplied?
+        energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys]) #How are these dimensions getting multiplied:
+        # multiply 2 matrixes, each matrix has 4 dimensions. n here is batch, query_len, heads (# of heads/attention), heads_dimension depth of attention. multiply along that dimension so that dimension disappears (like projecting onto a line) 
+        # investigate einsum more
         # queries shape: (N, query_len, heads, heads_dim)
         # keys_shape: (N, key_len, heads, heads_dim)
         # energy shape: (N, query_len, key_len)
@@ -44,7 +46,8 @@ class SelfAttention(nn.Module):
         if mask is not None:
             energy = energy.masked_fill(mask == 0, float("-1e20"))
 
-        attention = torch.softmax(energy / (self.embed_size ** (1/2)), dim=3) # why is dimension 3 here?
+        attention = torch.softmax(energy / (self.embed_size ** (1/2)), dim=3) # why is dimension 3 here? Compare to paper. Find smallest subset of module from paper.
+        # It seems softmax is applied to the 4th dimension (dim=3 has a 0 index). 
 
         out = torch.einsum("nhql,nlhd->nqhd", [attention, values]).reshape(
             N, query_len, self.heads*self.head_dim
@@ -220,7 +223,7 @@ class Transformer(nn.Module):
         self.device = device
 
     def make_src_mask(self, src):
-        src_mask = (src != self.src_pad_idx).unsqueeze(1).unsqueeze(2) #unsqueeze is still a little confusing
+        src_mask = (src != self.src_pad_idx).unsqueeze(1).unsqueeze(2) #unsqueeze adds a dimension of 1
         # (N, 1, 1, src_len)
         return src_mask.to(self.device)
 
