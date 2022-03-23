@@ -1,5 +1,8 @@
 flickr8k/
 
+# Added cuda to git ignore. might have to remove this?
+cuda-repo-wsl-ubuntu-11-6-local_11.6.1-1_amd64.deb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
